@@ -1,9 +1,6 @@
 package com.jali.shiro;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 /**
  * @author lijiang
@@ -11,12 +8,14 @@ import lombok.Setter;
  */
 @Setter
 @Getter
-@AllArgsConstructor
-@NoArgsConstructor
 public class User {
 
     private int id;
     private String name;
     private String password;
 
+    public User(String name, String password) {
+        this.name = name;
+        this.password = password;
+    }
 }
