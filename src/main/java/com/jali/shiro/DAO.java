@@ -1,5 +1,8 @@
 package com.jali.shiro;
 
+import org.apache.shiro.crypto.SecureRandomNumberGenerator;
+import org.apache.shiro.crypto.hash.SimpleHash;
+
 import java.sql.*;
 import java.util.HashSet;
 import java.util.Set;
@@ -10,32 +13,33 @@ import java.util.Set;
  */
 public class DAO {
     public DAO() {
-        try{
+        try {
             Class.forName("com.mysql.jdbc.Driver");
-        }catch (ClassNotFoundException e){
+        } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
     }
 
     public Connection getConnection() throws SQLException {
-        return DriverManager.getConnection("jdbc:mysql://127.0.0.1:3306/shiro?characterEncoding=UTF-8","root","root");
+        return DriverManager.getConnection("jdbc:mysql://127.0.0.1:3306/shiro?characterEncoding=UTF-8", "root", "root");
     }
 
     /**
      * 获取用户的密码
+     *
      * @param userName
      * @return
      */
-    public String getPassword(String userName){
+    public String getPassword(String userName) {
         String sql = "select password from user where name = ?";
-        try(Connection c = getConnection(); PreparedStatement ps = c.prepareStatement(sql)){
+        try (Connection c = getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {
             // 填写第一个问号占位符
-            ps.setString(1,userName);
+            ps.setString(1, userName);
             ResultSet resultSet = ps.executeQuery();
-            if(resultSet.next()){
+            if (resultSet.next()) {
                 return resultSet.getString("password");
             }
-        }catch (SQLException e){
+        } catch (SQLException e) {
             e.printStackTrace();
         }
         return null;
@@ -43,10 +47,11 @@ public class DAO {
 
     /**
      * 获取用户的角色
+     *
      * @param userName
      * @return
      */
-    public Set<String> listRoles(String userName){
+    public Set<String> listRoles(String userName) {
         Set<String> roles = new HashSet<>();
         String sql = "select r.name from user u " +
                 "left join user_role ur on u.id = ur.uid " +
@@ -67,10 +72,11 @@ public class DAO {
 
     /**
      * 获取用户的权限
+     *
      * @param userName
      * @return
      */
-    public Set<String> listPermissions(String userName){
+    public Set<String> listPermissions(String userName) {
         Set<String> permissions = new HashSet<>();
         String sql = "select p.name from user u " +
                 "left join user_role ru on u.id = ru.uid " +
@@ -81,10 +87,10 @@ public class DAO {
         try (Connection c = getConnection(); PreparedStatement ps = c.prepareStatement(sql);) {
             ps.setString(1, userName);
             ResultSet resultSet = ps.executeQuery();
-            while(resultSet.next()){
+            while (resultSet.next()) {
                 permissions.add(resultSet.getString(1));
             }
-        }catch (SQLException e){
+        } catch (SQLException e) {
             e.printStackTrace();
         }
         return permissions;
@@ -108,10 +114,53 @@ public class DAO {
 
     }
 
+    /**
+     * 创建用户
+     * @param name
+     * @param password
+     * @return
+     */
+    public String createUser(String name, String password) {
+        String sql = "insert into user values(null,?,?,?)";
+        // 生成随机的盐
+        String salt = new SecureRandomNumberGenerator().nextBytes().toString();
+        // 加密后的密码
+        String encodedPassword = new SimpleHash("md5", password, salt, 2).toString();
+        try (Connection c = getConnection(); PreparedStatement ps = c.prepareStatement(sql);) {
+            ps.setString(1, name);
+            ps.setString(2, encodedPassword);
+            ps.setString(3, salt);
+            ps.execute();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    /**
+     * 获取用户
+     * @param userName
+     * @return
+     */
+    public User getUser(String userName) {
+        User user = null;
+        String sql = "select * from user where name = ?";
+        try (Connection c = getConnection(); PreparedStatement ps = c.prepareStatement(sql);) {
+            ps.setString(1, userName);
+            ResultSet resultSet = ps.executeQuery();
+            if (resultSet.next()) {
+                user = new User();
+                user.setId(resultSet.getInt("id"));
+                user.setName(resultSet.getString("name"));
+                user.setPassword(resultSet.getString("password"));
+                user.setSalt(resultSet.getString("salt"));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return user;
+    }
 }
-
-
-
 
 
 

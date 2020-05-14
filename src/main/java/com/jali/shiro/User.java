@@ -8,11 +8,13 @@ import lombok.*;
  */
 @Setter
 @Getter
+@NoArgsConstructor
 public class User {
 
     private int id;
     private String name;
     private String password;
+    private String salt;
 
     public User(String name, String password) {
         this.name = name;
